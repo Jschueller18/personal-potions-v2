@@ -1,102 +1,234 @@
-import Image from "next/image";
+import Link from "next/link";
+import { Flask, Award, Heart, ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex h-16 items-center justify-between">
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <h1 className="text-2xl font-heading font-bold text-primary">
+                  Personal Potions
+                </h1>
+              </div>
+            </div>
+            <nav className="hidden md:block">
+              <div className="ml-10 flex items-baseline space-x-4">
+                <Link href="/" className="text-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                  Home
+                </Link>
+                <Link href="/about" className="text-muted-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                  About
+                </Link>
+                <Link href="/science" className="text-muted-foreground hover:text-primary px-3 py-2 rounded-md text-sm font-medium">
+                  Science
+                </Link>
+              </div>
+            </nav>
+            <div className="hidden md:block">
+              <Link
+                href="/survey"
+                className="bg-primary hover:bg-primary-dark text-primary-foreground px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                Get Started
+              </Link>
+            </div>
+          </div>
         </div>
+      </header>
+
+      <main>
+        {/* Hero Section */}
+        <section className="relative overflow-hidden bg-gradient-to-br from-background to-accent/20 py-20 sm:py-32">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-4xl text-center">
+              <h1 className="text-4xl font-heading font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+                Your Personal
+                <span className="block text-primary">Electrolyte Formula</span>
+              </h1>
+              <p className="mx-auto mt-6 max-w-2xl text-lg leading-8 text-muted-foreground">
+                Get a custom electrolyte blend tailored to your unique health profile, lifestyle, and goals. 
+                Science-backed formulas designed specifically for you.
+              </p>
+              
+              {/* Survey Prompt Box */}
+              <div className="mx-auto mt-10 max-w-lg rounded-2xl border border-primary/20 bg-accent/30 p-6 backdrop-blur-sm">
+                <h3 className="text-lg font-semibold text-foreground mb-2">
+                  Start with a 5-minute assessment
+                </h3>
+                <p className="text-sm text-muted-foreground mb-4">
+                  Answer questions about your health, diet, and lifestyle to get your personalized formula
+                </p>
+                <Link
+                  href="/survey"
+                  className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-primary-foreground px-6 py-3 rounded-lg font-medium transition-colors w-full justify-center sm:w-auto"
+                >
+                  Take Assessment
+                  <ArrowRight className="h-4 w-4" />
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Features Section */}
+        <section className="py-20 sm:py-32">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-heading font-bold tracking-tight text-foreground sm:text-4xl">
+                Why Choose Personal Potions?
+              </h2>
+              <p className="mt-4 text-lg leading-8 text-muted-foreground">
+                Unlike one-size-fits-all supplements, we create formulas based on your individual needs
+              </p>
+            </div>
+            
+            <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 hover:shadow-lg transition-shadow">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/10">
+                  <Flask className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-card-foreground">
+                  Personalized Formula
+                </h3>
+                <p className="mt-4 text-muted-foreground">
+                  Every formula is calculated based on your age, weight, activity level, health conditions, and dietary preferences.
+                </p>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 hover:shadow-lg transition-shadow">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-secondary/10">
+                  <Award className="h-6 w-6 text-secondary" />
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-card-foreground">
+                  Premium Quality
+                </h3>
+                <p className="mt-4 text-muted-foreground">
+                  Third-party tested, pharmaceutical-grade minerals with optimal bioavailability and absorption.
+                </p>
+              </div>
+
+              <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-8 hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
+                <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/20">
+                  <Heart className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-card-foreground">
+                  Science-Backed
+                </h3>
+                <p className="mt-4 text-muted-foreground">
+                  Formulations based on clinical research and optimal mineral ratios for maximum effectiveness.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* How It Works Section */}
+        <section className="bg-muted/30 py-20 sm:py-32">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-3xl font-heading font-bold tracking-tight text-foreground sm:text-4xl">
+                Simple Process, Powerful Results
+              </h2>
+            </div>
+            
+            <div className="mx-auto mt-16 grid max-w-4xl grid-cols-1 gap-8 sm:grid-cols-3">
+              <div className="text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground text-xl font-bold">
+                  1
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-foreground">
+                  Take Assessment
+                </h3>
+                <p className="mt-4 text-muted-foreground">
+                  Complete our comprehensive health and lifestyle questionnaire
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xl font-bold">
+                  2
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-foreground">
+                  Get Your Formula
+                </h3>
+                <p className="mt-4 text-muted-foreground">
+                  Our algorithm calculates your optimal mineral ratios and creates your custom blend
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-accent text-accent-foreground text-xl font-bold">
+                  3
+                </div>
+                <h3 className="mt-6 text-xl font-semibold text-foreground">
+                  Feel the Difference
+                </h3>
+                <p className="mt-4 text-muted-foreground">
+                  Experience improved hydration, energy, and recovery with your personalized formula
+                </p>
+              </div>
+            </div>
+
+            <div className="mt-12 text-center">
+              <Link
+                href="/survey"
+                className="inline-flex items-center gap-2 bg-primary hover:bg-primary-dark text-primary-foreground px-8 py-4 rounded-lg text-lg font-medium transition-colors"
+              >
+                Start Your Assessment
+                <ArrowRight className="h-5 w-5" />
+              </Link>
+            </div>
+          </div>
+        </section>
       </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
+
+      {/* Footer */}
+      <footer className="bg-primary text-primary-foreground">
+        <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="space-y-4">
+              <h3 className="text-xl font-heading font-bold">Personal Potions</h3>
+              <p className="text-primary-foreground/80 text-sm">
+                Personalized electrolyte formulas designed for your unique health profile.
+              </p>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-semibold">Quick Links</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/survey" className="text-primary-foreground/80 hover:text-primary-foreground">Take Assessment</Link></li>
+                <li><Link href="/about" className="text-primary-foreground/80 hover:text-primary-foreground">About Us</Link></li>
+                <li><Link href="/science" className="text-primary-foreground/80 hover:text-primary-foreground">The Science</Link></li>
+              </ul>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-semibold">Support</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/faq" className="text-primary-foreground/80 hover:text-primary-foreground">FAQ</Link></li>
+                <li><Link href="/contact" className="text-primary-foreground/80 hover:text-primary-foreground">Contact</Link></li>
+                <li><Link href="/support" className="text-primary-foreground/80 hover:text-primary-foreground">Help Center</Link></li>
+              </ul>
+            </div>
+            
+            <div className="space-y-4">
+              <h4 className="font-semibold">Legal</h4>
+              <ul className="space-y-2 text-sm">
+                <li><Link href="/privacy" className="text-primary-foreground/80 hover:text-primary-foreground">Privacy Policy</Link></li>
+                <li><Link href="/terms" className="text-primary-foreground/80 hover:text-primary-foreground">Terms of Service</Link></li>
+                <li><Link href="/refunds" className="text-primary-foreground/80 hover:text-primary-foreground">Refund Policy</Link></li>
+              </ul>
+            </div>
+          </div>
+          
+          <div className="mt-8 pt-8 border-t border-primary-foreground/20 text-center text-sm text-primary-foreground/80">
+            <p>&copy; 2024 Personal Potions. All rights reserved.</p>
+          </div>
+        </div>
       </footer>
     </div>
   );
