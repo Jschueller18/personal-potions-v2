@@ -9,10 +9,13 @@ export default function ProgressBar({ currentStep, totalSteps, steps }: Progress
     <div className="w-full max-w-4xl mx-auto mb-8">
       {/* Progress Line */}
       <div className="relative">
-        <div className="absolute top-4 left-0 w-full h-0.5 bg-muted"></div>
+        <div className="absolute top-4 left-0 w-full h-0.5 bg-gray-300"></div>
         <div 
-          className="absolute top-4 left-0 h-0.5 bg-primary transition-all duration-500 ease-out"
-          style={{ width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%` }}
+          className="absolute top-4 left-0 h-0.5 transition-all duration-500 ease-out"
+          style={{ 
+            width: `${((currentStep - 1) / (totalSteps - 1)) * 100}%`,
+            backgroundColor: 'hsl(137, 43%, 20%)'
+          }}
         ></div>
         
         {/* Step Indicators */}
@@ -26,15 +29,24 @@ export default function ProgressBar({ currentStep, totalSteps, steps }: Progress
             return (
               <div key={step} className="flex flex-col items-center">
                 <div
-                  className={`
-                    w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all duration-300
-                    ${isCompleted 
-                      ? 'bg-primary border-primary text-primary-foreground' 
+                  className="w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium border-2 transition-all duration-300"
+                  style={{
+                    backgroundColor: isCompleted 
+                      ? 'hsl(137, 43%, 20%)' 
                       : isActive 
-                      ? 'bg-background border-primary text-primary' 
-                      : 'bg-background border-muted text-muted-foreground'
-                    }
-                  `}
+                      ? 'white' 
+                      : 'white',
+                    borderColor: isCompleted 
+                      ? 'hsl(137, 43%, 20%)' 
+                      : isActive 
+                      ? 'hsl(137, 43%, 20%)' 
+                      : '#d1d5db',
+                    color: isCompleted 
+                      ? 'white' 
+                      : isActive 
+                      ? 'hsl(137, 43%, 20%)' 
+                      : '#9ca3af'
+                  }}
                 >
                   {isCompleted ? (
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,15 +58,14 @@ export default function ProgressBar({ currentStep, totalSteps, steps }: Progress
                 </div>
                 
                 <span 
-                  className={`
-                    mt-2 text-xs font-medium text-center transition-colors duration-300
-                    ${isActive 
-                      ? 'text-primary' 
+                  className="mt-2 text-xs font-medium text-center transition-colors duration-300"
+                  style={{
+                    color: isActive 
+                      ? 'hsl(137, 43%, 20%)' 
                       : isCompleted 
-                      ? 'text-foreground' 
-                      : 'text-muted-foreground'
-                    }
-                  `}
+                      ? '#374151' 
+                      : '#9ca3af'
+                  }}
                 >
                   <span className="hidden sm:inline">{step}</span>
                   <span className="sm:hidden">{step.slice(0, 3)}</span>
