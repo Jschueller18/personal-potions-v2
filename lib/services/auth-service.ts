@@ -98,8 +98,8 @@ export class AuthService {
         sessionType: 'authenticated'
       };
 
-    } catch (error) {
-      logger.error('Session validation error', error);
+      } catch (error) {
+    logger.error('Session validation error', error instanceof Error ? error : new Error(String(error)));
       return {
         isValid: false,
         user: null,
@@ -150,7 +150,7 @@ export class AuthService {
       return { success: true, draftId: survey.id };
 
     } catch (error) {
-      logger.error('Failed to create survey draft', error, {
+      logger.error('Failed to create survey draft', error instanceof Error ? error : new Error(String(error)), {
         userId: userId || 'anonymous',
         sessionId: sessionId.substring(0, 8) + '...'
       });
@@ -199,7 +199,7 @@ export class AuthService {
       return { success: true, draft: survey };
 
     } catch (error) {
-      logger.error('Failed to load survey draft', error, { draftId });
+      logger.error('Failed to load survey draft', error instanceof Error ? error : new Error(String(error)), { draftId });
       return { success: false, error: 'Failed to load survey draft' };
     }
   }
@@ -249,7 +249,7 @@ export class AuthService {
       return { success: true, linkedSurveys: updateResult.count };
 
     } catch (error) {
-      logger.error('Failed to link anonymous surveys to user', error, {
+      logger.error('Failed to link anonymous surveys to user', error instanceof Error ? error : new Error(String(error)), {
         sessionId: sessionId.substring(0, 8) + '...',
         userId
       });
@@ -290,7 +290,7 @@ export class AuthService {
       return { success: true, surveys, total };
 
     } catch (error) {
-      logger.error('Failed to get user survey history', error, { userId });
+      logger.error('Failed to get user survey history', error instanceof Error ? error : new Error(String(error)), { userId });
       return { success: false, error: 'Failed to get survey history' };
     }
   }
@@ -332,8 +332,8 @@ export class AuthService {
         deletedCount: result.count
       });
 
-    } catch (error) {
-      logger.error('Failed to cleanup expired surveys', error);
+      } catch (error) {
+    logger.error('Failed to cleanup expired surveys', error instanceof Error ? error : new Error(String(error)));
     }
   }
 } 

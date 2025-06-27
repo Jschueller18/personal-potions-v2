@@ -85,7 +85,7 @@ export async function validateSessionToken(token: string): Promise<{
     return { isValid: true, user: authUser, userId: user.id };
 
   } catch (error) {
-    logger.error('Session validation error', error);
+    logger.error('Session validation error', error instanceof Error ? error : new Error(String(error)));
     return { isValid: false, user: null, userId: null };
   }
 }

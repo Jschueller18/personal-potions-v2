@@ -136,7 +136,7 @@ export function withPerformanceMonitoring<T>(
     })
     .catch(error => {
       const duration = Date.now() - start;
-      logger.error('API request failed', error, {
+      logger.error('API request failed', error instanceof Error ? error : new Error(String(error)), {
         endpoint,
         duration
       });

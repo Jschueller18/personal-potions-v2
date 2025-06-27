@@ -238,7 +238,7 @@ export async function middleware(request: NextRequest) {
             });
           }
         } catch (refreshErr) {
-          logger.error('Session refresh error', refreshErr, { userId });
+          logger.error('Session refresh error', refreshErr instanceof Error ? refreshErr : new Error(String(refreshErr)), { userId });
         }
       }
     }
