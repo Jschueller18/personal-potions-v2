@@ -6,7 +6,13 @@
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:types": "jest types/__tests__",
+    "test:auth": "jest types/__tests__/auth-interfaces.test.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
@@ -26,10 +32,15 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "husky": "^9.1.7",
+    "jest": "^30.0.3",
+    "jest-environment-node": "^30.0.2",
     "tailwindcss": "^4",
+    "ts-jest": "^29.4.0",
     "typescript": "^5"
   }
 }

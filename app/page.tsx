@@ -37,8 +37,8 @@ export default function Home() {
             <div className="hidden md:block">
               <Link
                 href="/survey"
-                className="text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors shadow-md hover:shadow-lg"
-                style={{backgroundColor: 'hsl(196, 89%, 59%)', hover: 'hsl(196, 89%, 55%)'}}
+                className="text-white px-6 py-3 rounded-lg text-sm font-medium transition-colors shadow-md hover:shadow-lg hover:bg-opacity-90"
+                style={{backgroundColor: 'hsl(196, 89%, 59%)'}}
               >
                 Get Started
               </Link>
@@ -95,7 +95,7 @@ export default function Home() {
             </div>
             
             <div className="mx-auto mt-16 grid max-w-5xl grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
-              <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 hover:shadow-xl transition-all duration-300" style={{'&:hover': {borderColor: 'hsl(137, 43%, 60%)'}}}>
+              <div className="relative overflow-hidden rounded-2xl border border-gray-200 bg-white p-8 hover:shadow-xl transition-all duration-300 hover:border-green-300">
                 <div className="flex h-12 w-12 items-center justify-center rounded-lg" style={{backgroundColor: 'hsl(137, 43%, 90%)'}}>
                   <FlaskRound className="h-6 w-6" style={{color: 'hsl(137, 43%, 20%)'}} />
                 </div>
