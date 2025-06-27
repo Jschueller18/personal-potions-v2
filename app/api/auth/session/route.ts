@@ -108,13 +108,21 @@ export async function GET(request: NextRequest) {
         success: true,
         data: {
           isValid: true,
-          isAuthenticated: true,
-          sessionType: 'authenticated',
-          sessionId,
+          session: {
+            id: sessionId || session.access_token,
+            userId: session.user.id,
+            type: 'authenticated',
+            createdAt: new Date(session.user.created_at),
+            expiresAt: new Date(session.expires_at! * 1000),
+            lastActivityAt: new Date(),
+            ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+            userAgent: request.headers.get('user-agent') || 'unknown',
+            isActive: true,
+            auditTrail: []
+          },
           user,
           requiresRefresh,
           requiresMfa: false, // MFA not implemented in this version
-          expiresAt
         }
       } as SessionValidationResponse));
 
@@ -210,12 +218,47 @@ export async function POST(request: NextRequest) {
         success: true,
         data: {
           isValid: true,
-          isAuthenticated: true,
-          sessionType: 'authenticated',
-          sessionId,
+          session: {
+            id: sessionId || session.access_token,
+            userId: session.user.id,
+            type: 'authenticated',
+            createdAt: new Date(session.user.created_at),
+            expiresAt: new Date(session.expires_at! * 1000),
+            lastActivityAt: new Date(),
+            ipAddress: request.headers.get('x-forwarded-for') || 'unknown',
+            userAgent: request.headers.get('user-agent') || 'unknown',
+            isActive: true,
+            auditTrail: []
+          },
           user: {
             id: session.user.id,
-            email: session.user.email!
+            email: session.user.email!,
+            username: session.user.user_metadata.username,
+            profile: {
+              firstName: session.user.user_metadata.firstName,
+              lastName: session.user.user_metadata.lastName,
+              dateOfBirth: session.user.user_metadata.dateOfBirth ? new Date(session.user.user_metadata.dateOfBirth) : undefined,
+              createdAt: new Date(session.user.created_at),
+              lastLoginAt: session.user.last_sign_in_at ? new Date(session.user.last_sign_in_at) : undefined,
+            },
+            preferences: {
+              language: session.user.user_metadata.language || 'en',
+              timezone: session.user.user_metadata.timezone || 'UTC',
+              notifications: session.user.user_metadata.notifications || {
+                email: { enabled: true, security: true, marketing: false, surveyReminders: true },
+                sms: { enabled: false, security: false, surveyReminders: false }
+              }
+            },
+            hipaaConsent: session.user.user_metadata.hipaaConsent || {
+              hasConsented: false,
+              consentVersion: '1.0',
+              consentDetails: {
+                dataCollection: false,
+                phiProcessing: false,
+                dataRetention: false,
+                dataSharing: false
+              }
+            }
           },
           requiresRefresh: false,
           requiresMfa: requiresMfa && false // MFA not implemented yet
