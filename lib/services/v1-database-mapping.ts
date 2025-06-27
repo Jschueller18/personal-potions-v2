@@ -156,7 +156,7 @@ export class V1DatabaseMappingService {
         success: false,
         validation: {
           isValid: false,
-          errors: [`Database mapping failed: ${error.message}`],
+          errors: [`Database mapping failed: ${error instanceof Error ? error.message : String(error)}`],
           warnings: [],
         },
       };
