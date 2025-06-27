@@ -215,7 +215,7 @@ export class V1DatabaseMappingService {
       if (!survey) return null;
       
       // Return complete V1 CustomerData structure (preserved in JSONB)
-      return survey.customerData as CustomerData;
+      return survey.customerData as unknown as CustomerData;
       
     } catch (error) {
       console.error('Customer Survey Retrieval Error:', error);
@@ -235,7 +235,7 @@ export class V1DatabaseMappingService {
       if (!result) return null;
       
       // Return complete V1 FormulationResult structure (preserved in JSONB)
-      return result.formulationResult as FormulationResult;
+      return result.formulationResult as unknown as FormulationResult;
       
     } catch (error) {
       console.error('Formulation Result Retrieval Error:', error);
