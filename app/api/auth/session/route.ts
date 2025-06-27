@@ -119,7 +119,7 @@ export async function GET(request: NextRequest) {
       } as SessionValidationResponse));
 
     } catch (error) {
-      logger.error('Session validation endpoint error', error, {
+      logger.error('Session validation endpoint error', error instanceof Error ? error : new Error(String(error)), {
         ip: request.headers.get('x-forwarded-for') || 'unknown'
       });
 
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
       } as SessionValidationResponse));
 
     } catch (error) {
-      logger.error('Session validation POST endpoint error', error);
+      logger.error('Session validation POST endpoint error', error instanceof Error ? error : new Error(String(error)));
 
       return addSecurityHeaders(NextResponse.json(
         {

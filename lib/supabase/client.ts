@@ -5,7 +5,7 @@
  * This ensures secure session management while maintaining V1 calculation framework compatibility
  */
 
-import { createClient, createServerClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/types/database';
 
 // Environment variables validation
@@ -73,27 +73,39 @@ export function createSupabaseServerClient() {
  * This handles cookies and proper session management for SSR
  */
 export function createSupabaseRequestClient(request: Request) {
-  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
-    cookies: {
-      get(name: string) {
-        // Extract cookie from request headers
-        const cookies = request.headers.get('cookie');
-        if (!cookies) return undefined;
-        
-        const cookieMatch = cookies.match(new RegExp(`(^| )${name}=([^;]+)`));
-        return cookieMatch ? decodeURIComponent(cookieMatch[2]) : undefined;
-      },
-      set() {
-        // Not implemented for request context - handled by response
-      },
-      remove() {
-        // Not implemented for request context - handled by response
-      },
-    },
+  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
     auth: {
       flowType: 'pkce',
+      autoRefreshToken: false,
+      persistSession: false,
+    },
+    global: {
+      headers: {
+        'x-application-name': 'personal-potions-v2-request',
+        'Authorization': `Bearer ${extractTokenFromRequest(request)}`,
+      },
     },
   });
+}
+
+/**
+ * Helper function to extract auth token from request
+ */
+function extractTokenFromRequest(request: Request): string | undefined {
+  const cookies = request.headers.get('cookie');
+  if (!cookies) return undefined;
+  
+  const tokenMatch = cookies.match(/sb-[^=]+-auth-token=([^;]+)/);
+  if (tokenMatch) {
+    try {
+      const tokenData = JSON.parse(decodeURIComponent(tokenMatch[1]));
+      return tokenData.access_token;
+    } catch {
+      return undefined;
+    }
+  }
+  
+  return undefined;
 }
 
 // ================== AUTHENTICATION HELPERS ==================

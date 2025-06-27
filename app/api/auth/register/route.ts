@@ -247,7 +247,7 @@ export async function POST(request: NextRequest) {
       return addSecurityHeaders(NextResponse.json(responseData));
 
     } catch (error) {
-      logger.error('Registration endpoint error', error, {
+      logger.error('Registration endpoint error', error instanceof Error ? error : new Error(String(error)), {
         ip: request.headers.get('x-forwarded-for') || 'unknown'
       });
 

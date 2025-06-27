@@ -252,7 +252,7 @@ export async function middleware(request: NextRequest) {
     return response;
 
   } catch (error) {
-    logger.error('Middleware error', error, {
+    logger.error('Middleware error', error instanceof Error ? error : new Error(String(error)), {
       pathname: request.nextUrl.pathname,
       method: request.method,
       ip: request.headers.get('x-forwarded-for') || 'unknown'

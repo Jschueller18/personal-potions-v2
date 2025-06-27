@@ -206,7 +206,7 @@ export async function POST(request: NextRequest) {
       return response;
 
     } catch (error) {
-      logger.error('Login endpoint error', error, {
+      logger.error('Login endpoint error', error instanceof Error ? error : new Error(String(error)), {
         ip: request.headers.get('x-forwarded-for') || 'unknown'
       });
 
