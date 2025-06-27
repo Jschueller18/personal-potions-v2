@@ -11,8 +11,7 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:types": "jest types/__tests__",
-    "test:auth": "jest types/__tests__/auth-interfaces.test.ts",
-    "prepare": "husky"
+    "test:auth": "jest types/__tests__/auth-interfaces.test.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
