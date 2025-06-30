@@ -1,0 +1,207 @@
+# Personal Potions V2 - Supabase Configuration
+# This file defines the Supabase project configuration for the migration
+
+[api]
+# API configuration
+enabled = true
+port = 54321
+schemas = ["public", "auth"]
+extra_search_path = ["public", "auth"]
+max_rows = 1000
+
+[db]
+# Database configuration
+port = 54322
+major_version = 15
+
+[studio]
+# Supabase Studio configuration
+enabled = true
+port = 54323
+
+[inbucket]
+# Email testing configuration
+enabled = true
+port = 54324
+
+[storage]
+# File storage configuration
+enabled = true
+port = 54325
+image_transformation = {enabled = true}
+
+[auth]
+# Authentication configuration
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = ["https://localhost:3000", "http://127.0.0.1:3000"]
+jwt_expiry = 3600
+refresh_token_rotation_enabled = true
+enable_signup = true
+
+[auth.email]
+# Email authentication
+enabled = true
+double_confirm_changes = true
+enable_confirmations = false
+
+[auth.sms]
+# SMS authentication
+enabled = false
+
+[auth.external.apple]
+enabled = false
+
+[auth.external.azure]
+enabled = false
+
+[auth.external.bitbucket]
+enabled = false
+
+[auth.external.discord]
+enabled = false
+
+[auth.external.facebook]
+enabled = false
+
+[auth.external.github]
+enabled = false
+
+[auth.external.gitlab]
+enabled = false
+
+[auth.external.google]
+enabled = false
+
+[auth.external.keycloak]
+enabled = false
+
+[auth.external.linkedin]
+enabled = false
+
+[auth.external.notion]
+enabled = false
+
+[auth.external.twitch]
+enabled = false
+
+[auth.external.twitter]
+enabled = false
+
+[auth.external.slack]
+enabled = false
+
+[auth.external.spotify]
+enabled = false
+
+[auth.external.workos]
+enabled = false
+
+[auth.external.zoom]
+enabled = false
+
+[edge_runtime]
+# Edge runtime configuration
+enabled = true
+port = 54326
+
+[functions]
+# Supabase Functions configuration
+enabled = true
+verify_jwt = false
+
+[realtime]
+# Realtime configuration
+enabled = true
+port = 54327
+max_connections = 100
+max_channels_per_client = 100
+max_joins_per_second = 100
+max_events_per_second = 100
+poll_interval = 100
+poll_max_count = 100
+
+# Personal Potions specific configuration
+
+[migrations]
+# Migration settings for Personal Potions V2
+enabled = true
+path = "./migrations"
+
+# Important: These migrations MUST be applied in the exact order specified
+required_order = [
+  "20240101000001_initial_schema.sql",
+  "20240101000002_validation_constraints.sql", 
+  "20240101000003_rls_policies.sql",
+  "20240101000004_core_functions.sql",
+  "20240101000005_query_functions.sql"
+]
+
+# Environment-specific settings
+[environments]
+
+[environments.development]
+api_url = "http://localhost:54321"
+anon_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOuoJy13OUTBCjlYF1yT7lc8tKw3xTKsUgDE"
+service_role_key = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU"
+
+[environments.staging]
+# Staging environment keys should be set via environment variables
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY  
+# SUPABASE_SERVICE_KEY
+
+[environments.production]
+# Production environment keys should be set via environment variables
+# NEXT_PUBLIC_SUPABASE_URL
+# NEXT_PUBLIC_SUPABASE_ANON_KEY
+# SUPABASE_SERVICE_KEY
+
+# Database schema validation
+[schema]
+version = "1.0.0"
+description = "Personal Potions V2 - Single Supabase Database Migration"
+
+# Required tables for validation
+required_tables = [
+  "public.customer_surveys",
+  "public.formulation_results", 
+  "public.intake_conversions"
+]
+
+# Required functions for validation
+required_functions = [
+  "create_survey_draft",
+  "update_survey_progress",
+  "cleanup_expired_surveys",
+  "store_formulation_result",
+  "record_intake_conversion",
+  "link_anonymous_survey_to_user",
+  "get_survey_summary",
+  "get_formulation_history"
+]
+
+# Required RLS policies for validation
+required_policies = [
+  "Users can view own surveys",
+  "Users can insert own surveys", 
+  "Users can update own surveys",
+  "Users can delete own surveys",
+  "Anonymous surveys by session",
+  "Service role bypass"
+]
+
+# Data compatibility requirements
+[compatibility]
+v1_framework = true
+dual_intake_format = true
+jsonb_preservation = true
+hipaa_compliance = true
+zero_data_loss = true
+
+# Performance requirements
+[performance]
+indexes_required = true
+gin_indexes = true
+btree_indexes = true
+statistics_updates = true 

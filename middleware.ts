@@ -1,9 +1,9 @@
 /**
  * Next.js Middleware for Authentication & Session Management
  * 
- * CRITICAL: Dual Database Approach
- * - Supabase: Authentication & session management
- * - Prisma: Survey data with user_id linking
+ * CRITICAL: Single Supabase Database Approach
+ * - Complete schema access: auth.users + public.customer_surveys with proper FK constraints
+ * - Row Level Security enforcement for user data protection
  * 
  * Handles:
  * 1. Anonymous survey users (sessionId only)

@@ -1,9 +1,9 @@
 /**
  * Authentication Utilities
  * 
- * Core authentication functions for dual database approach:
- * - Supabase: Authentication & session management  
- * - Prisma: Survey data with user_id linking
+ * Core authentication functions for single Supabase database:
+ * - Complete schema access with proper foreign key constraints
+ * - Row Level Security enforcement for data protection
  */
 
 import { createSupabaseServerClient } from '@/lib/supabase/client';

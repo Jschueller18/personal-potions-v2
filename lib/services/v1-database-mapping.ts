@@ -287,7 +287,8 @@ export class V1DatabaseMappingService {
         let conversionSource: 'LEGACY_INTAKE_ESTIMATES' | 'DIRECT_NUMERIC';
         
         if (format === 'legacy') {
-          convertedMg = LEGACY_INTAKE_ESTIMATES[electrolyte][value];
+          const electrolyteMap = LEGACY_INTAKE_ESTIMATES[electrolyte as keyof typeof LEGACY_INTAKE_ESTIMATES];
+          convertedMg = electrolyteMap?.[value as keyof typeof electrolyteMap] || 0;
           conversionSource = 'LEGACY_INTAKE_ESTIMATES';
         } else {
           convertedMg = parseFloat(value);
@@ -396,7 +397,8 @@ export function convertLegacyIntakeToMg(
   electrolyte: string,
   legacyValue: string
 ): number {
-  return LEGACY_INTAKE_ESTIMATES[electrolyte]?.[legacyValue] || 0;
+  const electrolyteMap = LEGACY_INTAKE_ESTIMATES[electrolyte as keyof typeof LEGACY_INTAKE_ESTIMATES];
+  return electrolyteMap?.[legacyValue as keyof typeof electrolyteMap] || 0;
 }
 
 /**
@@ -415,7 +417,8 @@ export function getIntakeAnalysis(customerData: CustomerData) {
       formats[electrolyte] = format;
       
       if (format === 'legacy') {
-        converted[electrolyte] = LEGACY_INTAKE_ESTIMATES[electrolyte]?.[value] || 0;
+        const electrolyteMap = LEGACY_INTAKE_ESTIMATES[electrolyte as keyof typeof LEGACY_INTAKE_ESTIMATES];
+        converted[electrolyte] = electrolyteMap?.[value as keyof typeof electrolyteMap] || 0;
       } else {
         const numericValue = parseFloat(value);
         if (isNaN(numericValue)) {

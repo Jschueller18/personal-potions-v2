@@ -1,8 +1,8 @@
 /**
  * Supabase Client Configuration
  * 
- * Dual database approach: Supabase for authentication, Prisma for survey data
- * This ensures secure session management while maintaining V1 calculation framework compatibility
+ * Single database approach: Supabase for authentication, surveys, and formulations
+ * Complete schema access (auth + public) with secure session management and V1 framework compatibility
  */
 
 import { createClient } from '@supabase/supabase-js';
@@ -20,19 +20,17 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // ================== CLIENT-SIDE SUPABASE ==================
 
 /**
- * Browser client for authentication and user session management
+ * Browser client for authentication and survey operations
  * Used in React components and client-side operations
+ * Access to both auth and public schemas with RLS enforcement
  */
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+export const supabase = createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
   auth: {
     autoRefreshToken: true,
     persistSession: true,
     detectSessionInUrl: true,
     storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     flowType: 'pkce', // More secure for SPAs
-  },
-  db: {
-    schema: 'auth', // Only use auth schema, not public
   },
   global: {
     headers: {
@@ -44,21 +42,19 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
 // ================== SERVER-SIDE SUPABASE ==================
 
 /**
- * Server client for server-side authentication validation
- * Used in API routes and middleware for session validation
+ * Server client for server-side operations with elevated privileges
+ * Used in API routes and middleware for full database access
+ * Bypasses RLS for system operations (use carefully)
  */
 export function createSupabaseServerClient() {
   if (!supabaseServiceKey) {
     throw new Error('SUPABASE_SERVICE_KEY is required for server operations');
   }
 
-  return createClient<Database>(supabaseUrl, supabaseServiceKey, {
+  return createClient<Database>(supabaseUrl!, supabaseServiceKey, {
     auth: {
       autoRefreshToken: false,
       persistSession: false,
-    },
-    db: {
-      schema: 'auth',
     },
     global: {
       headers: {
@@ -71,9 +67,10 @@ export function createSupabaseServerClient() {
 /**
  * Create server client for Next.js request context
  * This handles cookies and proper session management for SSR
+ * Enforces RLS for user-scoped operations
  */
 export function createSupabaseRequestClient(request: Request) {
-  return createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  return createClient<Database>(supabaseUrl!, supabaseAnonKey!, {
     auth: {
       flowType: 'pkce',
       autoRefreshToken: false,

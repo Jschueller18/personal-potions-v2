@@ -1,133 +1,28 @@
 /**
- * Supabase Database Types
+ * Supabase Database Types - Main Export
  * 
- * Only includes auth-related types since we're using dual database approach
- * Survey data is handled by Prisma, authentication by Supabase
+ * Complete schema types for single Supabase database (auth + surveys + formulations)
+ * Maintains V1 calculation framework compatibility with exact field preservation
+ * 
+ * Composed from focused modules to follow 200-300 line rule
  */
 
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+// Import focused schema modules
+import type { AuthSchema, Json } from './database-auth-schema';
+import type { PublicSchema } from './database-public-schema';
 
+// Main database interface combining both schemas
 export interface Database {
-  auth: {
-    Tables: {
-      users: {
-        Row: {
-          id: string
-          aud: string
-          role: string
-          email: string
-          email_confirmed_at: string | null
-          phone: string | null
-          confirmed_at: string | null
-          last_sign_in_at: string | null
-          app_metadata: Json
-          user_metadata: Json
-          is_super_admin: boolean
-          created_at: string
-          updated_at: string
-          phone_confirmed_at: string | null
-          phone_change: string | null
-          phone_change_token: string | null
-          phone_change_sent_at: string | null
-          email_change: string | null
-          email_change_token_new: string | null
-          email_change_token_current: string | null
-          email_change_sent_at: string | null
-          recovery_token: string | null
-          recovery_sent_at: string | null
-          email_change_confirm_status: number | null
-          banned_until: string | null
-          reauthentication_token: string | null
-          reauthentication_sent_at: string | null
-          is_sso_user: boolean
-          deleted_at: string | null
-        }
-        Insert: {
-          id?: string
-          aud?: string
-          role?: string
-          email: string
-          email_confirmed_at?: string | null
-          phone?: string | null
-          confirmed_at?: string | null
-          last_sign_in_at?: string | null
-          app_metadata?: Json
-          user_metadata?: Json
-          is_super_admin?: boolean
-          created_at?: string
-          updated_at?: string
-          phone_confirmed_at?: string | null
-          phone_change?: string | null
-          phone_change_token?: string | null
-          phone_change_sent_at?: string | null
-          email_change?: string | null
-          email_change_token_new?: string | null
-          email_change_token_current?: string | null
-          email_change_sent_at?: string | null
-          recovery_token?: string | null
-          recovery_sent_at?: string | null
-          email_change_confirm_status?: number | null
-          banned_until?: string | null
-          reauthentication_token?: string | null
-          reauthentication_sent_at?: string | null
-          is_sso_user?: boolean
-          deleted_at?: string | null
-        }
-        Update: {
-          id?: string
-          aud?: string
-          role?: string
-          email?: string
-          email_confirmed_at?: string | null
-          phone?: string | null
-          confirmed_at?: string | null
-          last_sign_in_at?: string | null
-          app_metadata?: Json
-          user_metadata?: Json
-          is_super_admin?: boolean
-          created_at?: string
-          updated_at?: string
-          phone_confirmed_at?: string | null
-          phone_change?: string | null
-          phone_change_token?: string | null
-          phone_change_sent_at?: string | null
-          email_change?: string | null
-          email_change_token_new?: string | null
-          email_change_token_current?: string | null
-          email_change_sent_at?: string | null
-          recovery_token?: string | null
-          recovery_sent_at?: string | null
-          email_change_confirm_status?: number | null
-          banned_until?: string | null
-          reauthentication_token?: string | null
-          reauthentication_sent_at?: string | null
-          is_sso_user?: boolean
-          deleted_at?: string | null
-        }
-      }
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      [_ in never]: never
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
+  auth: AuthSchema;
+  public: PublicSchema;
 }
 
-// Helper types for auth operations
-export type AuthUser = Database['auth']['Tables']['users']['Row']
-export type AuthUserInsert = Database['auth']['Tables']['users']['Insert']
-export type AuthUserUpdate = Database['auth']['Tables']['users']['Update'] 
+// Re-export all types for convenience
+export * from './database-auth-schema';
+export * from './database-public-schema';
+
+// Export Json type at top level (commonly used)
+export type { Json };
+
+// Helper types are re-exported from the focused modules above
+// This keeps the main file clean and under the 200-300 line limit 

@@ -11,6 +11,9 @@ export * from './interfaces';
 export * from './constants';
 export * from './validators';
 
+// Database types (single Supabase database schema)
+export * from './database';
+
 // Authentication interfaces (HIPAA-compliant)
 export * from './auth-interfaces';
 

@@ -11,16 +11,17 @@
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:types": "jest types/__tests__",
-    "test:auth": "jest types/__tests__/auth-interfaces.test.ts"
+    "test:auth": "jest types/__tests__/auth-interfaces.test.ts",
+    "prepare": "husky"
   },
   "dependencies": {
     "@prisma/client": "^6.10.1",
     "@radix-ui/react-slot": "^1.2.3",
     "@stripe/stripe-js": "^7.3.1",
     "@supabase/supabase-js": "^2.50.0",
-    "@tailwindcss/postcss": "^4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "dotenv": "^17.0.0",
     "lucide-react": "^0.522.0",
     "next": "15.3.4",
     "openai": "^5.6.0",
@@ -28,10 +29,10 @@
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "stripe": "^18.2.1",
-    "tailwind-merge": "^3.3.1",
-    "tailwindcss": "^4"
+    "tailwind-merge": "^3.3.1"
   },
   "devDependencies": {
+    "@tailwindcss/postcss": "^4",
     "@types/jest": "^30.0.0",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -39,6 +40,7 @@
     "husky": "^9.1.7",
     "jest": "^30.0.3",
     "jest-environment-node": "^30.0.2",
+    "tailwindcss": "^4",
     "ts-jest": "^29.4.0",
     "typescript": "^5"
   }
