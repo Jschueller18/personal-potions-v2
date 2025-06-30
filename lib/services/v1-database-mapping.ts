@@ -3,6 +3,8 @@
  * 
  * Handles V1 CustomerData preservation with dual intake format support
  * CRITICAL: Ensures zero data loss during V1 → database conversion
+ * 
+ * Converted from Prisma to Supabase with proper clean architecture
  */
 
 import type {
@@ -10,6 +12,12 @@ import type {
   FormulationResult,
   ValidationResult,
 } from '@/types';
+
+import type {
+  CustomerSurveyInsert,
+  FormulationResultInsert,
+  IntakeConversionInsert,
+} from '@/types/database';
 
 import {
   LEGACY_INTAKE_ESTIMATES,
@@ -29,27 +37,9 @@ import {
   INTAKE_FIELDS,
 } from '@/types/utils';
 
-// Database client (adjust import based on your setup)
-import { PrismaClient } from '@/app/generated/prisma';
-const prisma = new PrismaClient();
+import { BaseService } from './base-service';
 
 // ================== INTERFACES ==================
-
-interface DatabaseSurveyData {
-  id: string;
-  userId?: string;
-  sessionId: string;
-  customerData: CustomerData;
-  intakeFormats: IntakeFormatMap;
-  age?: number;
-  biologicalSex?: string;
-  weight?: number;
-  activityLevel?: string;
-  sweatLevel?: string;
-  detectedUseCase?: string;
-  status: 'draft' | 'completed' | 'processed';
-  completionPercentage?: number;
-}
 
 interface IntakeFormatMap {
   sodium: 'legacy' | 'numeric';
@@ -66,36 +56,21 @@ interface IntakeConversionRecord {
   conversionSource: 'LEGACY_INTAKE_ESTIMATES' | 'DIRECT_NUMERIC';
 }
 
-interface DatabaseFormulationData {
-  customerSurveyId: string;
-  formulationResult: FormulationResult;
-  useCase: string;
-  formulaVersion: string;
-  servingSize: string;
-  sodiumMg?: number;
-  potassiumMg?: number;
-  magnesiumMg?: number;
-  calciumMg?: number;
-  priceCents?: number;
-  formulaName?: string;
-}
-
 // ================== V1 DATA MAPPING SERVICE ==================
 
-export class V1DatabaseMappingService {
+export class V1DatabaseMappingService extends BaseService {
   
   /**
    * Maps V1 CustomerData to database format with dual intake support
    * CRITICAL: Preserves all 26 fields exactly with zero data loss
    */
-  async saveCustomerSurvey(
+  static async saveCustomerSurvey(
     customerData: Partial<CustomerData>,
     sessionId: string,
     userId?: string
   ): Promise<{ success: boolean; surveyId?: string; validation: ValidationResult }> {
     
     try {
-      // Step 1: Apply V1 defaults and validate
       const normalizedData = applyCustomerDefaults(customerData);
       const validation = validateCustomerData(normalizedData);
       
@@ -103,62 +78,62 @@ export class V1DatabaseMappingService {
         return { success: false, validation };
       }
       
-      // Step 2: Detect and validate intake formats
       const intakeFormats = this.detectIntakeFormats(normalizedData);
       const intakeConversions = this.convertIntakeValues(normalizedData, intakeFormats);
-      
-      // Step 3: Extract derived fields for performance
       const derivedFields = this.extractDerivedFields(normalizedData);
-      
-      // Step 4: Detect use case using V1 logic
       const detectedUseCase = this.detectUseCase(normalizedData);
       
-      // Step 5: Save to database with transaction
-      const result = await prisma.$transaction(async (tx) => {
-        
-        // Create customer survey record
-        const survey = await tx.customerSurvey.create({
-          data: {
-            userId: userId || null,
-            sessionId,
-            customerData: normalizedData as any, // JSONB preservation
-            intakeFormats: intakeFormats as any,
-            ...derivedFields,
-            detectedUseCase,
-            status: 'completed',
-            completionPercentage: 100,
-            source: 'web',
-          },
-        });
-        
-        // Create intake conversion records for audit trail
-        if (intakeConversions.length > 0) {
-          await tx.intakeConversion.createMany({
-            data: intakeConversions.map(conversion => ({
-              customerSurveyId: survey.id,
-              ...conversion,
-            })),
-          });
-        }
-        
-        return survey;
-      });
+      const supabase = this.getSupabaseClient();
       
-      return {
-        success: true,
-        surveyId: result.id,
-        validation,
+      const surveyData: CustomerSurveyInsert = {
+        user_id: userId || null,
+        session_id: sessionId,
+        customer_data: normalizedData as any,
+        intake_formats: intakeFormats as any,
+        ...derivedFields,
+        detected_use_case: detectedUseCase,
+        status: 'completed',
+        completion_percentage: 100,
+        source: 'web',
       };
       
+      const { data: survey, error: surveyError } = await supabase
+        .from('customer_surveys')
+        .insert(surveyData)
+        .select()
+        .single();
+      
+      if (surveyError) {
+        return {
+          success: false,
+          validation: { isValid: false, errors: [`Database mapping failed: ${surveyError.message}`], warnings: [] },
+        };
+      }
+      
+      // Create intake conversion records for audit trail (best effort)
+      if (intakeConversions.length > 0) {
+        const conversionData: IntakeConversionInsert[] = intakeConversions.map(conversion => ({
+          customer_survey_id: survey.id,
+          electrolyte: conversion.electrolyte,
+          original_value: conversion.originalValue,
+          original_format: conversion.originalFormat,
+          converted_mg: conversion.convertedMg,
+          conversion_source: conversion.conversionSource,
+        }));
+        
+        await supabase.from('intake_conversions').insert(conversionData);
+      }
+      
+      this.handleDatabaseSuccess('save customer survey', { 
+        surveyId: survey.id, sessionId: this.maskSessionId(sessionId) 
+      });
+      
+      return { success: true, surveyId: survey.id, validation };
+      
     } catch (error) {
-      console.error('V1 Database Mapping Error:', error);
       return {
         success: false,
-        validation: {
-          isValid: false,
-          errors: [`Database mapping failed: ${error instanceof Error ? error.message : String(error)}`],
-          warnings: [],
-        },
+        validation: { isValid: false, errors: [`Database mapping failed: ${error instanceof Error ? error.message : String(error)}`], warnings: [] },
       };
     }
   }
@@ -166,56 +141,66 @@ export class V1DatabaseMappingService {
   /**
    * Saves V1 FormulationResult to database with metadata preservation
    */
-  async saveFormulationResult(
+  static async saveFormulationResult(
     surveyId: string,
     formulationResult: FormulationResult,
-    options?: {
-      priceCents?: number;
-      formulaName?: string;
-    }
+    options?: { priceCents?: number; formulaName?: string; }
   ): Promise<{ success: boolean; resultId?: string }> {
     
     try {
-      const result = await prisma.formulationResult.create({
-        data: {
-          customerSurveyId: surveyId,
-          formulationResult: formulationResult as any, // JSONB preservation
-          useCase: formulationResult.useCase,
-          formulaVersion: formulationResult.metadata.formulaVersion,
-          servingSize: formulationResult.metadata.servingSize,
-          sodiumMg: formulationResult.formulationPerServing.sodium,
-          potassiumMg: formulationResult.formulationPerServing.potassium,
-          magnesiumMg: formulationResult.formulationPerServing.magnesium,
-          calciumMg: formulationResult.formulationPerServing.calcium,
-          priceCents: options?.priceCents,
-          formulaName: options?.formulaName,
-        },
-      });
+      const supabase = this.getSupabaseClient();
       
+      const resultData: FormulationResultInsert = {
+        customer_survey_id: surveyId,
+        formulation_result: formulationResult as any,
+        use_case: formulationResult.useCase,
+        formula_version: formulationResult.metadata.formulaVersion,
+        serving_size: formulationResult.metadata.servingSize,
+        sodium_mg: formulationResult.formulationPerServing.sodium,
+        potassium_mg: formulationResult.formulationPerServing.potassium,
+        magnesium_mg: formulationResult.formulationPerServing.magnesium,
+        calcium_mg: formulationResult.formulationPerServing.calcium,
+        price_cents: options?.priceCents || null,
+        formula_name: options?.formulaName || null,
+      };
+      
+      const { data: result, error } = await supabase
+        .from('formulation_results')
+        .insert(resultData)
+        .select()
+        .single();
+      
+      if (error) {
+        return { success: false };
+      }
+      
+      this.handleDatabaseSuccess('save formulation result', { resultId: result.id, surveyId });
       return { success: true, resultId: result.id };
       
     } catch (error) {
-      console.error('Formulation Result Save Error:', error);
       return { success: false };
     }
   }
   
   /**
-   * Retrieves complete CustomerData from database with intake format reconstruction
+   * Retrieves complete CustomerData from database
    */
-  async getCustomerSurvey(surveyId: string): Promise<CustomerData | null> {
+  static async getCustomerSurvey(surveyId: string): Promise<CustomerData | null> {
     try {
-      const survey = await prisma.customerSurvey.findUnique({
-        where: { id: surveyId },
-        include: {
-          intakeConversions: true,
-        },
-      });
+      const supabase = this.getSupabaseClient();
       
-      if (!survey) return null;
+      const { data: survey, error } = await supabase
+        .from('customer_surveys')
+        .select('*')
+        .eq('id', surveyId)
+        .single();
       
-      // Return complete V1 CustomerData structure (preserved in JSONB)
-      return survey.customerData as unknown as CustomerData;
+      if (error || !survey) {
+        console.error('Customer Survey Retrieval Error:', error);
+        return null;
+      }
+      
+      return survey.customer_data as unknown as CustomerData;
       
     } catch (error) {
       console.error('Customer Survey Retrieval Error:', error);
@@ -226,16 +211,22 @@ export class V1DatabaseMappingService {
   /**
    * Retrieves FormulationResult with complete metadata
    */
-  async getFormulationResult(resultId: string): Promise<FormulationResult | null> {
+  static async getFormulationResult(resultId: string): Promise<FormulationResult | null> {
     try {
-      const result = await prisma.formulationResult.findUnique({
-        where: { id: resultId },
-      });
+      const supabase = this.getSupabaseClient();
       
-      if (!result) return null;
+      const { data: result, error } = await supabase
+        .from('formulation_results')
+        .select('*')
+        .eq('id', resultId)
+        .single();
       
-      // Return complete V1 FormulationResult structure (preserved in JSONB)
-      return result.formulationResult as unknown as FormulationResult;
+      if (error || !result) {
+        console.error('Formulation Result Retrieval Error:', error);
+        return null;
+      }
+      
+      return result.formulation_result as unknown as FormulationResult;
       
     } catch (error) {
       console.error('Formulation Result Retrieval Error:', error);
@@ -245,17 +236,8 @@ export class V1DatabaseMappingService {
   
   // ================== PRIVATE HELPER METHODS ==================
   
-  /**
-   * Detects intake formats for all 4 electrolytes
-   * CRITICAL: Supports both legacy and numeric formats
-   */
-  private detectIntakeFormats(customerData: CustomerData): IntakeFormatMap {
-    const formats: IntakeFormatMap = {
-      sodium: 'legacy',
-      potassium: 'legacy',
-      magnesium: 'legacy',
-      calcium: 'legacy',
-    };
+  private static detectIntakeFormats(customerData: CustomerData): IntakeFormatMap {
+    const formats: IntakeFormatMap = { sodium: 'legacy', potassium: 'legacy', magnesium: 'legacy', calcium: 'legacy' };
     
     INTAKE_FIELDS.forEach(field => {
       const value = customerData[field as keyof CustomerData] as string;
@@ -268,13 +250,7 @@ export class V1DatabaseMappingService {
     return formats;
   }
   
-  /**
-   * Converts intake values to mg amounts with audit trail
-   */
-  private convertIntakeValues(
-    customerData: CustomerData,
-    formats: IntakeFormatMap
-  ): IntakeConversionRecord[] {
+  private static convertIntakeValues(customerData: CustomerData, formats: IntakeFormatMap): IntakeConversionRecord[] {
     const conversions: IntakeConversionRecord[] = [];
     
     INTAKE_FIELDS.forEach(field => {
@@ -295,144 +271,46 @@ export class V1DatabaseMappingService {
           conversionSource = 'DIRECT_NUMERIC';
         }
         
-        conversions.push({
-          electrolyte,
-          originalValue: value,
-          originalFormat: format,
-          convertedMg,
-          conversionSource,
-        });
+        conversions.push({ electrolyte, originalValue: value, originalFormat: format, convertedMg, conversionSource });
       }
     });
     
     return conversions;
   }
   
-  /**
-   * Extracts commonly queried fields for database performance
-   */
-  private extractDerivedFields(customerData: CustomerData) {
+  private static extractDerivedFields(customerData: CustomerData) {
     return {
       age: customerData.age,
-      biologicalSex: customerData['biological-sex'],
+      biological_sex: customerData['biological-sex'],
       weight: customerData.weight,
-      activityLevel: customerData['activity-level'],
-      sweatLevel: customerData['sweat-level'],
+      activity_level: customerData['activity-level'],
+      sweat_level: customerData['sweat-level'],
     };
   }
   
-  /**
-   * Detects use case using V1 priority logic
-   * CRITICAL: Must match exact V1 use case detection order
-   */
-  private detectUseCase(customerData: CustomerData): string {
+  private static detectUseCase(customerData: CustomerData): string {
     // V1 Use Case Detection Logic (PRESERVE EXACT ORDER)
-    
-    // 1. Bedtime - Sleep issues take highest priority
-    if (customerData['sleep-issues']?.length && 
-        customerData['sleep-issues'][0] !== 'none') {
+    if (customerData['sleep-issues']?.length && customerData['sleep-issues'][0] !== 'none') {
       return 'bedtime';
     }
-    
-    // 2. Menstrual - Menstrual symptoms second
-    if (customerData['menstrual-symptoms']?.length && 
-        customerData['menstrual-symptoms'][0] !== 'none') {
+    if (customerData['menstrual-symptoms']?.length && customerData['menstrual-symptoms'][0] !== 'none') {
       return 'menstrual';
     }
-    
-    // 3. Sweat - Heavy sweat + frequent workouts third
     if ((customerData['sweat-level'] === 'heavy' || customerData['sweat-level'] === 'excessive') &&
         (customerData['workout-frequency'] === 'daily' || customerData['workout-frequency'] === '4-6-per-week')) {
       return 'sweat';
     }
-    
-    // 4. Default - Daily
     return 'daily';
   }
 }
 
-// ================== UTILITY FUNCTIONS ==================
+// Export utilities separately to avoid circular dependencies
+export { validateV1FieldPreservation, convertLegacyIntakeToMg, getIntakeAnalysis } from './v1-database-mapping-utils';
 
-/**
- * Validates that all V1 CustomerData fields are preserved
- */
-export function validateV1FieldPreservation(
-  original: CustomerData,
-  retrieved: CustomerData
-): ValidationResult {
-  const errors: string[] = [];
-  const warnings: string[] = [];
-  
-  // Check all 26 required fields
-  const requiredFields = [
-    'age', 'biological-sex', 'weight', 'activity-level', 'sweat-level',
-    'daily-goals', 'sleep-goals', 'sleep-issues', 'menstrual-symptoms',
-    'conditions', 'exercise-type', 'workout-frequency', 'workout-duration',
-    'workout-intensity', 'hangover-timing', 'hangover-symptoms',
-    'sodium-intake', 'potassium-intake', 'magnesium-intake', 'calcium-intake',
-    'sodium-supplement', 'potassium-supplement', 'magnesium-supplement',
-    'calcium-supplement', 'daily-water-intake', 'usage'
-  ];
-  
-  requiredFields.forEach(field => {
-    const originalValue = original[field as keyof CustomerData];
-    const retrievedValue = retrieved[field as keyof CustomerData];
-    
-    if (JSON.stringify(originalValue) !== JSON.stringify(retrievedValue)) {
-      errors.push(`Field '${field}' not preserved: ${originalValue} → ${retrievedValue}`);
-    }
-  });
-  
-  return {
-    isValid: errors.length === 0,
-    errors,
-    warnings,
-  };
-}
-
-/**
- * Converts legacy intake format to mg for calculations
- */
-export function convertLegacyIntakeToMg(
-  electrolyte: string,
-  legacyValue: string
-): number {
-  const electrolyteMap = LEGACY_INTAKE_ESTIMATES[electrolyte as keyof typeof LEGACY_INTAKE_ESTIMATES];
-  return electrolyteMap?.[legacyValue as keyof typeof electrolyteMap] || 0;
-}
-
-/**
- * Gets intake analysis for API responses
- */
-export function getIntakeAnalysis(customerData: CustomerData) {
-  const formats: Record<string, 'legacy' | 'numeric'> = {};
-  const converted: Record<string, number> = {};
-  const warnings: string[] = [];
-  
-  INTAKE_FIELDS.forEach(field => {
-    const value = customerData[field as keyof CustomerData] as string;
-    if (value) {
-      const electrolyte = field.replace('-intake', '');
-      const format = detectFormat(value);
-      formats[electrolyte] = format;
-      
-      if (format === 'legacy') {
-        const electrolyteMap = LEGACY_INTAKE_ESTIMATES[electrolyte as keyof typeof LEGACY_INTAKE_ESTIMATES];
-        converted[electrolyte] = electrolyteMap?.[value as keyof typeof electrolyteMap] || 0;
-      } else {
-        const numericValue = parseFloat(value);
-        if (isNaN(numericValue)) {
-          warnings.push(`Invalid numeric intake value for ${electrolyte}: ${value}`);
-          converted[electrolyte] = 0;
-        } else {
-          converted[electrolyte] = numericValue;
-        }
-      }
-    }
-  });
-  
-  return { formats, converted, warnings };
-}
-
-// Export singleton instance
-export const v1DatabaseMapping = new V1DatabaseMappingService(); 
+// Export singleton instance (maintain backward compatibility)
+export const v1DatabaseMapping = {
+  saveCustomerSurvey: V1DatabaseMappingService.saveCustomerSurvey,
+  saveFormulationResult: V1DatabaseMappingService.saveFormulationResult,
+  getCustomerSurvey: V1DatabaseMappingService.getCustomerSurvey,
+  getFormulationResult: V1DatabaseMappingService.getFormulationResult,
+}; 
