@@ -3,13 +3,22 @@
  * 
  * Ensures zero data loss when mapping V1 CustomerData to database schema
  * Tests dual intake format support and field preservation
+ * Updated for Supabase service testing
  */
 
-import type { CustomerData } from '@/types';
+// Mock environment variables before any imports
+process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
+process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+process.env.SUPABASE_SERVICE_KEY = 'test-service-key';
+
+import type { CustomerData, FormulationResult } from '@/types';
 import {
   LEGACY_INTAKE_ESTIMATES,
   VALIDATION_LIMITS,
 } from '@/types/constants';
+
+// Import the service to test
+import { V1DatabaseMappingService } from '../services/v1-database-mapping';
 
 describe('V1 Database Mapping', () => {
   
@@ -299,6 +308,356 @@ describe('V1 Database Mapping', () => {
           conversionSource: 'DIRECT_NUMERIC'
         }
       ]);
+    });
+  });
+
+  // ================== DATABASE SERVICE METHOD TESTS ==================
+  
+  describe('Supabase Database Service Methods', () => {
+    
+    let mockSupabaseClient: any;
+    let originalGetSupabaseClient: any;
+    
+    beforeEach(() => {
+      // Reset all mocks
+      jest.clearAllMocks();
+      
+      // Create fresh mock client for each test with proper chaining
+      const mockQueryBuilder = {
+        insert: jest.fn().mockReturnThis(),
+        select: jest.fn().mockReturnThis(),
+        eq: jest.fn().mockReturnThis(),
+        single: jest.fn().mockResolvedValue({ data: null, error: null }),
+      };
+      
+      mockSupabaseClient = {
+        from: jest.fn().mockReturnValue(mockQueryBuilder),
+      };
+      
+      // Set the mock query builder reference for test access
+      mockSupabaseClient._queryBuilder = mockQueryBuilder;
+      
+      // Mock the service's getSupabaseClient method directly
+      originalGetSupabaseClient = (V1DatabaseMappingService as any).getSupabaseClient;
+      (V1DatabaseMappingService as any).getSupabaseClient = jest.fn().mockReturnValue(mockSupabaseClient);
+    });
+    
+    afterEach(() => {
+      // Restore the original method
+      (V1DatabaseMappingService as any).getSupabaseClient = originalGetSupabaseClient;
+    });
+    
+    describe('saveCustomerSurvey', () => {
+      
+      test('should successfully save complete CustomerData to Supabase', async () => {
+        // Mock successful database response
+        const mockSurveyResponse = {
+          data: {
+            id: 'survey-123',
+            user_id: 'user-456',
+            session_id: 'session-789',
+            customer_data: completeV1CustomerData,
+            status: 'completed',
+          },
+          error: null,
+        };
+        
+        // Configure the mock responses
+        mockSupabaseClient._queryBuilder.single.mockResolvedValueOnce(mockSurveyResponse);
+        mockSupabaseClient._queryBuilder.single.mockResolvedValueOnce({ data: [], error: null }); // For intake conversions
+        
+        const result = await V1DatabaseMappingService.saveCustomerSurvey(
+          completeV1CustomerData,
+          'session-789',
+          'user-456'
+        );
+        
+        // Verify success response
+        expect(result.success).toBe(true);
+        expect(result.surveyId).toBe('survey-123');
+        expect(result.validation.isValid).toBe(true);
+        
+        // Verify Supabase client calls
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('customer_surveys');
+        expect(mockSupabaseClient._queryBuilder.insert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            user_id: 'user-456',
+            session_id: 'session-789',
+            customer_data: completeV1CustomerData,
+            status: 'completed',
+            completion_percentage: 100,
+            detected_use_case: 'bedtime', // Based on our test data (has sleep issues)
+          })
+        );
+        
+        // Verify intake conversions were also inserted
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('intake_conversions');
+      });
+      
+      test('should handle anonymous surveys (no user_id)', async () => {
+        const mockSurveyResponse = {
+          data: {
+            id: 'survey-anonymous',
+            user_id: null,
+            session_id: 'session-anonymous',
+            customer_data: completeV1CustomerData,
+          },
+          error: null,
+        };
+        
+        mockSupabaseClient._queryBuilder.single.mockResolvedValueOnce(mockSurveyResponse);
+        mockSupabaseClient._queryBuilder.single.mockResolvedValueOnce({ data: [], error: null });
+        
+        const result = await V1DatabaseMappingService.saveCustomerSurvey(
+          completeV1CustomerData,
+          'session-anonymous'
+          // No userId parameter
+        );
+        
+        expect(result.success).toBe(true);
+        expect(mockSupabaseClient._queryBuilder.insert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            user_id: null,
+            session_id: 'session-anonymous',
+          })
+        );
+      });
+      
+      test('should preserve all 26 CustomerData fields in JSONB', async () => {
+        const mockSurveyResponse = {
+          data: { id: 'survey-test', customer_data: completeV1CustomerData },
+          error: null,
+        };
+        
+        mockSupabaseClient._queryBuilder.single.mockResolvedValueOnce(mockSurveyResponse);
+        mockSupabaseClient._queryBuilder.single.mockResolvedValueOnce({ data: [], error: null });
+        
+        await V1DatabaseMappingService.saveCustomerSurvey(
+          completeV1CustomerData,
+          'session-test'
+        );
+        
+        // Extract the actual customer_data that was inserted
+        const insertCall = mockSupabaseClient._queryBuilder.insert.mock.calls[0][0];
+        const insertedCustomerData = insertCall.customer_data;
+        
+        // Verify all 26 fields are preserved exactly
+        const expectedFields = [
+          'age', 'biological-sex', 'weight', 'activity-level', 'sweat-level',
+          'daily-goals', 'sleep-goals', 'sleep-issues', 'menstrual-symptoms',
+          'conditions', 'exercise-type', 'workout-frequency', 'workout-duration',
+          'workout-intensity', 'hangover-timing', 'hangover-symptoms',
+          'sodium-intake', 'potassium-intake', 'magnesium-intake', 'calcium-intake',
+          'sodium-supplement', 'potassium-supplement', 'magnesium-supplement',
+          'calcium-supplement', 'daily-water-intake', 'usage'
+        ];
+        
+        expectedFields.forEach(field => {
+          expect(insertedCustomerData).toHaveProperty(field);
+          expect(insertedCustomerData[field]).toEqual(completeV1CustomerData[field]);
+        });
+      });
+      
+      test('should handle database errors gracefully', async () => {
+        // Mock database error
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue({
+          data: null,
+          error: { message: 'Database connection failed' },
+        });
+        
+        const result = await V1DatabaseMappingService.saveCustomerSurvey(
+          completeV1CustomerData,
+          'session-error'
+        );
+        
+        expect(result.success).toBe(false);
+        expect(result.validation.isValid).toBe(false);
+        expect(result.validation.errors[0]).toContain('Database mapping failed');
+      });
+      
+      test('should handle validation errors', async () => {
+        // Test with invalid data (age too young)
+        const invalidData: CustomerData = {
+          ...completeV1CustomerData,
+          age: 10, // Below V1 minimum of 13
+        };
+        
+        const result = await V1DatabaseMappingService.saveCustomerSurvey(
+          invalidData,
+          'session-invalid'
+        );
+        
+        expect(result.success).toBe(false);
+        expect(result.validation.isValid).toBe(false);
+        // Should not call database if validation fails
+        expect(mockSupabaseClient.from).not.toHaveBeenCalled();
+      });
+    });
+    
+    describe('saveFormulationResult', () => {
+      
+      const mockFormulationResult: FormulationResult = {
+        useCase: 'daily',
+        formulationPerServing: {
+          sodium: 250.5,
+          potassium: 300.7,
+          magnesium: 50.2,
+          calcium: 125.8,
+        },
+        dailyRequirements: {
+          sodium: { min: 1500, max: 2300, recommended: 1800 },
+          potassium: { min: 2000, max: 3500, recommended: 2600 },
+          magnesium: { min: 200, max: 400, recommended: 300 },
+          calcium: { min: 800, max: 1200, recommended: 1000 },
+        },
+        metadata: {
+          calculationTimestamp: new Date().toISOString(),
+          formulaVersion: '1.4',
+          servingSize: '16 fl oz (473ml)',
+        },
+      };
+      
+      test('should successfully save FormulationResult to database', async () => {
+        const mockResultResponse = {
+          data: {
+            id: 'result-123',
+            customer_survey_id: 'survey-456',
+            formulation_result: mockFormulationResult,
+          },
+          error: null,
+        };
+        
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue(mockResultResponse);
+        
+        const result = await V1DatabaseMappingService.saveFormulationResult(
+          'survey-456',
+          mockFormulationResult,
+          { priceCents: 1299, formulaName: 'Daily Blend' }
+        );
+        
+        expect(result.success).toBe(true);
+        expect(result.resultId).toBe('result-123');
+        
+        // Verify correct data structure was inserted
+        expect(mockSupabaseClient._queryBuilder.insert).toHaveBeenCalledWith(
+          expect.objectContaining({
+            customer_survey_id: 'survey-456',
+            formulation_result: mockFormulationResult,
+            use_case: 'daily',
+            formula_version: '1.4',
+            serving_size: '16 fl oz (473ml)',
+            sodium_mg: 250.5,
+            potassium_mg: 300.7,
+            magnesium_mg: 50.2,
+            calcium_mg: 125.8,
+            price_cents: 1299,
+            formula_name: 'Daily Blend',
+          })
+        );
+      });
+      
+      test('should handle optional parameters correctly', async () => {
+        const mockResultResponse = {
+          data: { id: 'result-simple' },
+          error: null,
+        };
+        
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue(mockResultResponse);
+        
+        const result = await V1DatabaseMappingService.saveFormulationResult(
+          'survey-simple',
+          mockFormulationResult
+          // No options provided
+        );
+        
+        expect(result.success).toBe(true);
+        
+        // Verify optional fields are null
+        const insertCall = mockSupabaseClient._queryBuilder.insert.mock.calls[0][0];
+        expect(insertCall.price_cents).toBeNull();
+        expect(insertCall.formula_name).toBeNull();
+      });
+    });
+    
+    describe('getCustomerSurvey', () => {
+      
+      test('should retrieve complete CustomerData from database', async () => {
+        const mockSurveyResponse = {
+          data: {
+            id: 'survey-retrieve',
+            customer_data: completeV1CustomerData,
+            status: 'completed',
+          },
+          error: null,
+        };
+        
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue(mockSurveyResponse);
+        
+        const result = await V1DatabaseMappingService.getCustomerSurvey('survey-retrieve');
+        
+        expect(result).toEqual(completeV1CustomerData);
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('customer_surveys');
+        expect(mockSupabaseClient._queryBuilder.eq).toHaveBeenCalledWith('id', 'survey-retrieve');
+      });
+      
+      test('should return null for non-existent survey', async () => {
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue({
+          data: null,
+          error: { message: 'No rows found' },
+        });
+        
+        const result = await V1DatabaseMappingService.getCustomerSurvey('non-existent');
+        
+        expect(result).toBeNull();
+      });
+    });
+    
+    describe('getFormulationResult', () => {
+      
+      test('should retrieve FormulationResult from database', async () => {
+        const mockFormulationResult: FormulationResult = {
+          useCase: 'daily',
+          formulationPerServing: { sodium: 250, potassium: 300, magnesium: 50, calcium: 125 },
+          dailyRequirements: {
+            sodium: { min: 1500, max: 2300, recommended: 1800 },
+            potassium: { min: 2000, max: 3500, recommended: 2600 },
+            magnesium: { min: 200, max: 400, recommended: 300 },
+            calcium: { min: 800, max: 1200, recommended: 1000 },
+          },
+          metadata: {
+            calculationTimestamp: new Date().toISOString(),
+            formulaVersion: '1.4',
+            servingSize: '16 fl oz (473ml)',
+          },
+        };
+        
+        const mockResultResponse = {
+          data: {
+            id: 'result-retrieve',
+            formulation_result: mockFormulationResult,
+          },
+          error: null,
+        };
+        
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue(mockResultResponse);
+        
+        const result = await V1DatabaseMappingService.getFormulationResult('result-retrieve');
+        
+        expect(result).toEqual(mockFormulationResult);
+        expect(mockSupabaseClient.from).toHaveBeenCalledWith('formulation_results');
+        expect(mockSupabaseClient._queryBuilder.eq).toHaveBeenCalledWith('id', 'result-retrieve');
+      });
+      
+      test('should return null for non-existent result', async () => {
+        mockSupabaseClient._queryBuilder.single.mockResolvedValue({
+          data: null,
+          error: { message: 'No rows found' },
+        });
+        
+        const result = await V1DatabaseMappingService.getFormulationResult('non-existent');
+        
+        expect(result).toBeNull();
+      });
     });
   });
 });
