@@ -115,9 +115,8 @@ VALIDATION_LIMITS = {
 
 ### **Core Implementation**
 1. **`V1_DATABASE_MAPPING.md`** - Complete mapping documentation
-2. **`prisma/schema.prisma`** - Database schema with V1 support
-3. **`prisma/migrations/001_v1_schema_constraints.sql`** - Additional constraints
-4. **`lib/services/v1-database-mapping.ts`** - Database service layer
+2. **`supabase/migrations/`** - Database schema with V1 support in Supabase
+3. **`lib/services/v1-database-mapping.ts`** - Database service layer
 
 ### **Testing & Validation**
 5. **`lib/__tests__/v1-database-mapping.test.ts`** - Comprehensive test suite (15 tests)
@@ -133,10 +132,9 @@ VALIDATION_LIMITS = {
 ## **Production Readiness Checklist**
 
 ### **✅ Data Migration Ready**
-- [ ] Run `npx prisma generate` to create client
-- [ ] Run `npx prisma db push` to create schema
-- [ ] Execute `001_v1_schema_constraints.sql` for additional constraints
-- [ ] Test with sample V1 customer data
+- [ ] Verify Supabase migrations are applied correctly
+- [ ] Test with sample V1 customer data in Supabase
+- [ ] Confirm RLS policies are active and working
 
 ### **✅ Application Integration**
 - [ ] Import `v1DatabaseMapping` service in API routes

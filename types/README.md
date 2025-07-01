@@ -158,7 +158,7 @@ These types are designed to integrate with:
 - **Calculation Engine**: `lib/calculation-engine/`
 - **API Endpoints**: `app/api/formula/`
 - **Survey Forms**: Data collection and validation
-- **Database Models**: Prisma schema alignment
+- **Database Models**: Supabase schema alignment
 
 ---
 
