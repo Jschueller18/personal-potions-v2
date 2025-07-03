@@ -3,6 +3,8 @@
  * 
  * Handles user logout and session cleanup
  * Clears both Supabase session and application cookies
+ * 
+ * TODO: Migrate to use AuthService.logout() when method is implemented
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -39,6 +41,7 @@ export async function POST(request: NextRequest) {
         return response;
       }
 
+      // TODO: Replace with AuthService.logout() when implemented
       // Create Supabase server client
       const supabase = createSupabaseServerClient();
 

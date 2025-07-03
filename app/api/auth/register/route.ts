@@ -1,8 +1,10 @@
 /**
- * Authentication API Route: Registration
+ * Authentication API Route: User Registration
  * 
- * Handles user registration with HIPAA consent tracking
- * Creates user in Supabase auth and prepares for survey data linking
+ * Handles new user account creation with HIPAA consent validation
+ * Creates Supabase auth user with proper metadata
+ * 
+ * TODO: Migrate to use AuthService.register() when method is implemented
  */
 
 import { NextRequest, NextResponse } from 'next/server';

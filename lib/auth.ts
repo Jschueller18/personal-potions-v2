@@ -4,6 +4,8 @@
  * Core authentication functions for single Supabase database:
  * - Complete schema access with proper foreign key constraints
  * - Row Level Security enforcement for data protection
+ * 
+ * TODO: Migrate validateSessionToken to use AuthService when session validation method is implemented
  */
 
 import { createSupabaseServerClient } from '@/lib/supabase/client';
@@ -32,6 +34,8 @@ export function getSessionFromHeaders(headers: Headers): {
 /**
  * Validate server-side session token
  * Used by API routes for authentication
+ * 
+ * TODO: Replace with AuthService.validateSession() when implemented
  */
 export async function validateSessionToken(token: string): Promise<{
   isValid: boolean;
@@ -43,6 +47,7 @@ export async function validateSessionToken(token: string): Promise<{
       return { isValid: true, user: null, userId: null };
     }
 
+    // TODO: Replace direct client usage with AuthService
     const supabase = createSupabaseServerClient();
     const { data: { user }, error } = await supabase.auth.getUser(token);
 
@@ -92,6 +97,7 @@ export async function validateSessionToken(token: string): Promise<{
 
 /**
  * Generate anonymous session ID
+ * Standardized format for consistent session management
  */
 export function generateAnonymousSessionId(): string {
   return `anon_${Date.now()}_${Math.random().toString(36).substring(2, 15)}`;

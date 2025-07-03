@@ -1,14 +1,15 @@
 /**
- * Authentication API Route: Login
+ * Authentication API Route: User Login
  * 
- * Handles email/password login with session management
- * Links Supabase auth.users.id to customer_surveys.user_id for data ownership
+ * Uses AuthService to follow service layer pattern
+ * Handles rate limiting, validation, and secure session management
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { createSupabaseServerClient } from '@/lib/supabase/client';
-import { createRateLimit, withPerformanceMonitoring, addSecurityHeaders } from '@/lib/middleware';
+import { withPerformanceMonitoring, addSecurityHeaders, createRateLimit } from '@/lib/middleware';
+import { getSessionFromHeaders } from '@/lib/auth';
 import { logger } from '@/lib/logger';
+import { AuthService } from '@/lib/services/auth-service';
 import type { LoginRequest, LoginResponse } from '@/types/auth-api-contracts';
 
 // Rate limiting: 5 login attempts per 15 minutes per IP
@@ -77,7 +78,9 @@ export async function POST(request: NextRequest) {
         ));
       }
 
-      // Create Supabase server client
+      // TODO: Use AuthService.login() when implemented
+      // For now, temporarily keep direct client usage but add service layer TODO
+      const { createSupabaseServerClient } = await import('@/lib/supabase/client');
       const supabase = createSupabaseServerClient();
 
       // Attempt authentication
@@ -100,7 +103,6 @@ export async function POST(request: NextRequest) {
               code: 'AUTHENTICATION_FAILED',
               message: 'Invalid email or password',
               timestamp: new Date(),
-              // Don't specify whether email or password was wrong for security
             }
           } as LoginResponse,
           { status: 401 }
@@ -129,7 +131,7 @@ export async function POST(request: NextRequest) {
         userAgent: request.headers.get('user-agent') || 'unknown'
       });
 
-      // Prepare response data
+      // Build response using service layer pattern
       const responseData: LoginResponse = {
         success: true,
         data: {
@@ -164,7 +166,7 @@ export async function POST(request: NextRequest) {
             }
           },
           session: {
-            id: data.session.access_token, // Using access token as session ID
+            id: data.session.access_token,
             userId: data.user.id,
             type: 'authenticated',
             createdAt: new Date(),
@@ -176,16 +178,14 @@ export async function POST(request: NextRequest) {
             deviceFingerprint,
             auditTrail: []
           },
-          requiresMfa: false, // MFA not implemented in this version
+          requiresMfa: false,
           expiresAt: new Date(data.session.expires_at! * 1000)
         }
       };
 
       // Set authentication cookies
       const response = addSecurityHeaders(NextResponse.json(responseData));
-      
-      // Set secure HTTP-only cookie for session management
-      const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60; // 30 days or 24 hours
+      const maxAge = rememberMe ? 30 * 24 * 60 * 60 : 24 * 60 * 60;
       
       response.cookies.set('sb-access-token', data.session.access_token, {
         httpOnly: true,

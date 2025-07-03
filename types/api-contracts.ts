@@ -39,6 +39,8 @@ export interface FormulaCalculationResponse {
       converted: ElectrolyteAmounts;
       warnings: string[];
     };
+    surveyId?: string; // Database ID of saved customer survey
+    formulationId?: string; // Database ID of saved formulation result
   };
   validation?: ValidationResult;
   error?: {
